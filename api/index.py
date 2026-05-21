@@ -1,20 +1,26 @@
-from http.server import BaseHTTPRequestHandler
+from flask import Flask, request
 import telebot
 import os
 
-# يتم جلب التوكن بأمان من إعدادات Vercel
+# جلب التوكن بأمان من إعدادات Vercel
 TOKEN = os.environ.get("TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
-class handler(BaseHTTPRequestHandler):
-    def do_POST(self):
-        content_length = int(self.headers['Content-Length'])
-        post_data = self.rfile.read(content_length)
-        update = telebot.types.Update.de_json(post_data.decode('utf-8'))
+app = Flask(__name__)
+
+@app.route('/api', methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
         bot.process_new_updates([update])
-        self.send_response(200)
-        self.end_headers()
-        return
+        return '', 200
+    else:
+        return 'Invalid Content-Type', 403
+
+@app.route('/')
+def index():
+    return "Bot is running..."
 
 @bot.message_handler(func=lambda m: True)
 def handle_all(m):
@@ -27,11 +33,19 @@ def handle_all(m):
     
     # أوامر التحكم بالدردشة العامة
     elif text == "قفل الدردشة":
-        bot.set_chat_permissions(chat_id, telebot.types.ChatPermissions(can_send_messages=False))
-        bot.reply_to(m, "تم قفل الدردشة بنجاح.")
+        try:
+            bot.set_chat_permissions(chat_id, telebot.types.ChatPermissions(can_send_messages=False))
+            bot.reply_to(m, "تم قفل الدردشة بنجاح.")
+        except Exception as e:
+            bot.reply_to(m, f"فشل القفل: تأكد أنني مشرف بصلاحيات كاملة.")
+            
     elif text == "فتح الدردشة":
-        bot.set_chat_permissions(chat_id, telebot.types.ChatPermissions(can_send_messages=True, can_send_media_messages=True))
-        bot.reply_to(m, "تم فتح الدردشة بنجاح.")
+        try:
+            bot.set_chat_permissions(chat_id, telebot.types.ChatPermissions(can_send_messages=True, can_send_media_messages=True))
+            bot.reply_to(m, "تم فتح الدردشة بنجاح.")
+        except Exception as e:
+            pass
+            
     elif text == "قفل الكلايش":
         bot.reply_to(m, "تم قفل الكلايش")
     elif text == "فتح الكلايش":
@@ -45,15 +59,24 @@ def handle_all(m):
         msg_id = m.reply_to_message.message_id
         
         if text == "تثبيت":
-            bot.pin_chat_message(chat_id, msg_id)
+            try: bot.pin_chat_message(chat_id, msg_id)
+            except: pass
         elif text == "مسح":
-            bot.delete_message(chat_id, msg_id)
+            try: bot.delete_message(chat_id, msg_id)
+            except: pass
         elif text == "حظر" or text == "بالقندرة":
-            bot.ban_chat_member(chat_id, target_id)
-            bot.reply_to(m, "تم الحظر بنجاح.")
+            try:
+                bot.ban_chat_member(chat_id, target_id)
+                bot.reply_to(m, "تم الحظر بنجاح.")
+            except: pass
         elif text == "تقييد" or text == "انچب":
-            bot.restrict_chat_member(chat_id, target_id, telebot.types.ChatPermissions(can_send_messages=False))
-            bot.reply_to(m, "تم التقييد.")
+            try:
+                bot.restrict_chat_member(chat_id, target_id, telebot.types.ChatPermissions(can_send_messages=False))
+                bot.reply_to(m, "تم التقييد.")
+            except: pass
         elif text == "رفع مطور":
             bot.reply_to(m, "تم رفعه مطور بنجاح.")
-          
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
+    
