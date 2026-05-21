@@ -25,9 +25,7 @@ firebase_creds = {
   "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40nahj-al-muntaqem-bot-5f7ad.iam.gserviceaccount.com"
 }
 
-# 3. ربط وتفعيل قاعدة البيانات المستلمة منك
-if not firebase_admin._apps:
-    # إصلاح مشكلة الأسطر الجديدة في مفتاح Firebase قبل التشغيل
+# 3. إصلاح مشكلة الأسطر الجديدة في مفتاح Firebase وتفعيل قاعدة البيانات
 if "private_key" in firebase_creds:
     firebase_creds["private_key"] = firebase_creds["private_key"].replace("\\n", "\n")
 
@@ -221,7 +219,7 @@ def handle_messages(m):
         set_data(f'states/{user_id}', {'step': 'wait_laws'})
         bot.reply_to(m, "📝 أرسل قائمة القوانين الجديدة كاملة كرسالة نصية لحفظها سحابياً:")
 
-    # 14 و 15 و 16- كشوفات وعرض القوائم المخزنة في Firebase للأدمنية
+    # 14 و 15 و 16- كشوفات وعرض القوائم المخزنة in Firebase للأدمنية
     elif text == "المطورين" and is_bot_premium:
         bot.reply_to(m, f"🛠️ معرفات المطورين المضافين سحابياً:\n{developers}")
     elif text == "المحظورين" and is_bot_premium:
@@ -308,4 +306,4 @@ def handle_messages(m):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-    
+      
