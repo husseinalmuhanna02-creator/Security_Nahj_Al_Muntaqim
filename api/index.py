@@ -17,7 +17,6 @@ FIREBASE_CONFIG = os.environ.get("FIREBASE_KEY")
 
 if FIREBASE_CONFIG and not firebase_admin._apps:
     try:
-        # تحويل النص المخزن إلى قاموس Python مع إصلاح الأسطر الجديدة تلقائياً
         creds_dict = json.loads(FIREBASE_CONFIG)
         if "private_key" in creds_dict:
             creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
@@ -83,6 +82,7 @@ def handle_messages(m):
     is_bot_dev = is_chat_owner or user_id in developers
     is_bot_premium = is_bot_dev or user_id in premium_users or is_chat_admin
 
+    # --- وضعنا أمر التفعيل في البداية تماماً لتخطي القفل ---
     if text == "تفعيل" and is_chat_admin:
         set_data(f'groups/{chat_id}/active', True)
         set_data(f'groups/{chat_id}/settings/links', True)
@@ -92,6 +92,7 @@ def handle_messages(m):
         bot.reply_to(m, "✔️ تم تفعيل البوت بنجاح وحفظ غرفتك داخل قاعدة بيانات Firebase السحابية.")
         return
 
+    # التحقق من التفعيل لبقية الأوامر
     if not get_data(f'groups/{chat_id}/active', False): return
 
     if text == "الغاء" and is_bot_dev:
@@ -236,7 +237,7 @@ def handle_messages(m):
                 bot.ban_chat_member(m.chat.id, int(target_uid))
                 b_list = get_data(f'groups/{chat_id}/banned_list', [])
                 if target_name not in b_list: b_list.append(target_name); set_data(f'groups/{chat_id}/banned_list', b_list)
-                bot.reply_to(m, f"👞 طار {target_name} بالقندرة خارج المجموعة وتم تسجيله في المحظورين سحابياً.")
+                bot.reply_to(m, f"👞 طار {target_name} بالقندرة خارج المجموعة وتم تسجيله in المحظورين سحابياً.")
             except: pass
         elif text == "الغاء حظر":
             try:
@@ -273,4 +274,4 @@ def handle_messages(m):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-          
+    
