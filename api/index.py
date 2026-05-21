@@ -27,6 +27,11 @@ firebase_creds = {
 
 # 3. ربط وتفعيل قاعدة البيانات المستلمة منك
 if not firebase_admin._apps:
+    # إصلاح مشكلة الأسطر الجديدة في مفتاح Firebase قبل التشغيل
+if "private_key" in firebase_creds:
+    firebase_creds["private_key"] = firebase_creds["private_key"].replace("\\n", "\n")
+
+if not firebase_admin._apps:
     cred = credentials.Certificate(firebase_creds)
     firebase_admin.initialize_app(cred, {
         'databaseURL': 'https://nahj-al-muntaqem-bot-5f7ad-default-rtdb.firebaseio.com/'
