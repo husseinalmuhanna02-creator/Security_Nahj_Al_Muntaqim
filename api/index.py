@@ -4,29 +4,36 @@ import firebase_admin
 from firebase_admin import credentials, db
 import os
 import re
-import json
 
-# 1. إعداد توكن البوت من بيئة Vercel
+# 1. إعداد توكن البوت
 TOKEN = os.environ.get("TOKEN")
 bot = telebot.TeleBot(TOKEN)
 
 app = Flask(__name__)
 
-# 2. جلب مفتاح Firebase بأمان من متغيرات Vercel البيئية
-FIREBASE_CONFIG = os.environ.get("FIREBASE_KEY")
+# 2. دمج بيانات مفتاح الخدمة مباشرة كقاموس برمي جاهز ومصلح الأسطر
+firebase_creds = {
+  "type": "service_account",
+  "project_id": "nahj-al-muntaqem-bot-5f7ad",
+  "private_key_id": "ed06e2ec7ee51f1c907043337868d1560061fece",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDYl9lcDmlrehMf\njmjlxf/4btcQChI9MPtXRnfYfKMDNGa7HUTzDlcQpwSW+hTWEMESWc8MN9MACN2V\nq7sOpEY4mkq/9OixQ4p+LPsvm6qAG4U/QcQNX0XD4SUqL+uS4NiPkVVP5odgCkOm\nFczF/B58R2XSByoMDkLtUXJpfD113Eg//AiMO466JlDV4lyDM4sLMQk9L0CDFm5i\nMbbTleJMTBcvpVdjqkrqd9FLtrD1XNks5+AimZrf+DmbiAfdcvC6wXPgYcS2/uTE\n5kuN5r8AeIeOii3xel9U7NbvJ/NeR1Wmbla0plmCPkd9vG1EyUjPYo4dV/GJgNx6\nSKZ0AN51AgMBAAECggEAG49089MMpIWv1cHeBLDlcaQO/yY87GblcJVRri0r4/5A\nvToL+j6eowqRmbGAQb33h2GAqF4ZHgXCxmcIAiSyn8S4UsUz78x3nLcWDliJQUxf\nL+2rKAVxv+tP+paG7BVq0Rft6mEb5ENiGMno2N+MNIW0Rd2uAsM0znRg8d3Ch1LQ\nmrgS3nh3GawpcVUT8EU8Pietx9ixR2wsrp/6vrzPb4o74J/mThCrmkLqBSvwc4Lq\ny7wgZEStfmEMqwMHRdKGgw5YJuEdRHSrTrs1ICiuF1iHHD7r+X/2jfrfc43i0IuP\nghV+4b/FDUl+299sGJwQX0BNTke97ywMxNrOHkTCuQKBgQD7oxiz70+TXPRd1lUa\nFg9ndRZVuqlZ/EPhCky+SPx+AdKfHlTu96T9EgeOIG8S+BgFTG4NCO9CFFflDNzx\nlZlwic7xNyzMULAd+QW4EusKbCqQ6Vl5WQUw+lEgdtVYaOE0sZFpMpQkPOaU97+i\n3zf0GWdBeMZyYtrz0I1m8koZiQKBgQDcWTVWi6ysHr0/F3MggmzPFdGkNrT82S/q\n4RZgPa7iAyhIUDDcJ7+o+aVSwOGKtl4i9VxXwBvkN50TKRrdpaWAyY1wFuAxVcFz\nBDFRF4rX63ni4fDmb70NM523ytJIfW8nAd0TGxrNUTyWG8sy2K5ZVDXO9EZXRNsI\nrS7GH6zejQKBgQCU80jnEYvv9cDsXreHNnGt0sACxPgDvPBNIDSnGjrjN5798w1h\nWpN9/ZMdTROSjepiEIjADH7bhYE1ovSRx/TIibpGTFunIUfupf39pK0eQUK8/nOp\nAcmx4SnuZokIySQtdcJWG8tW2/m9Sh1Ugn7zbaoSNjR5dwyV7+gTfO3hyQKBgQDQ\nuNP0cgQTWl7LJ6xPLBxjoPhfQ872/8gLBkHK0kMZJgJ/VS6jLCe5qRh4Jeq/GXZc\nSOy61mfVKvToFHS1ZdY7AzCt741YTjIbf+ozNUi4tP5U8s7diRScL7uDQGUmc2LZ\noUNHeNJPkFcCnbtCI8wrI8CAlBUZT0jnlByNYa2/dQKBgGZC7uogK8JkJQ6wfDwb\nOnj5mOhg/cnbeMuHvAOxkd+qI1PgDvjbnrLO4O376YJD8Cqj3ylJYM78ENEarPj6\nMWr1/jhvV98ooKRk0SxJ8zjqwtfuWFy8fvNHW7M/ATGt7h5lqJ3bikD7woccRM5F\ngYfgmhb0gPkhKwuCB1vPYyNN\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-fbsvc@nahj-al-muntaqem-bot-5f7ad.iam.gserviceaccount.com",
+  "client_id": "107547021360046307334",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40nahj-al-muntaqem-bot-5f7ad.iam.gserviceaccount.com"
+}
 
-if FIREBASE_CONFIG and not firebase_admin._apps:
-    try:
-        creds_dict = json.loads(FIREBASE_CONFIG)
-        if "private_key" in creds_dict:
-            creds_dict["private_key"] = creds_dict["private_key"].replace("\\n", "\n")
-            
-        cred = credentials.Certificate(creds_dict)
-        firebase_admin.initialize_app(cred, {
-            'databaseURL': 'https://nahj-al-muntaqem-bot-5f7ad-default-rtdb.firebaseio.com/'
-        })
-    except Exception as e:
-        print(f"Firebase Init Error: {e}")
+# إصلاح الأسطر يدويًا داخل الكود لضمان الاستقرار المباشر
+firebase_creds["private_key"] = firebase_creds["private_key"].replace("\\n", "\n")
+
+# 3. تفعيل قاعدة البيانات مباشرة
+if not firebase_admin._apps:
+    cred = credentials.Certificate(firebase_creds)
+    firebase_admin.initialize_app(cred, {
+        'databaseURL': 'https://nahj-al-muntaqem-bot-5f7ad-default-rtdb.firebaseio.com/'
+    })
 
 # قائمة الكلمات البذيئة لمنعها
 BAD_WORDS = ["منيوك", "كسمك", "عير", "كسختك", "قحبة", "فرخ", "طيز"]
@@ -54,7 +61,7 @@ def webhook():
 
 @app.route('/')
 def index():
-    return "Bot Core with Safe Firebase is Active..."
+    return "Bot Core is Active..."
 
 @bot.chat_member_handler(func=lambda update: update.new_chat_member.status == "member")
 def welcome_new_member(update):
@@ -82,7 +89,7 @@ def handle_messages(m):
     is_bot_dev = is_chat_owner or user_id in developers
     is_bot_premium = is_bot_dev or user_id in premium_users or is_chat_admin
 
-    # --- وضعنا أمر التفعيل في البداية تماماً لتخطي القفل ---
+    # تفعيل البوت (الأمر في البداية لتخطي القفل)
     if text == "تفعيل" and is_chat_admin:
         set_data(f'groups/{chat_id}/active', True)
         set_data(f'groups/{chat_id}/settings/links', True)
@@ -92,7 +99,6 @@ def handle_messages(m):
         bot.reply_to(m, "✔️ تم تفعيل البوت بنجاح وحفظ غرفتك داخل قاعدة بيانات Firebase السحابية.")
         return
 
-    # التحقق من التفعيل لبقية الأوامر
     if not get_data(f'groups/{chat_id}/active', False): return
 
     if text == "الغاء" and is_bot_dev:
@@ -237,7 +243,7 @@ def handle_messages(m):
                 bot.ban_chat_member(m.chat.id, int(target_uid))
                 b_list = get_data(f'groups/{chat_id}/banned_list', [])
                 if target_name not in b_list: b_list.append(target_name); set_data(f'groups/{chat_id}/banned_list', b_list)
-                bot.reply_to(m, f"👞 طار {target_name} بالقندرة خارج المجموعة وتم تسجيله in المحظورين سحابياً.")
+                bot.reply_to(m, f"👞 طار {target_name} بالقندرة خارج المجموعة وتم تسجيله في المحظورين سحابياً.")
             except: pass
         elif text == "الغاء حظر":
             try:
@@ -274,4 +280,4 @@ def handle_messages(m):
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-    
+                
